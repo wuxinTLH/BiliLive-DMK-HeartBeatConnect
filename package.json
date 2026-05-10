@@ -1,0 +1,15 @@
+{
+  "name": "bili-live-tools",
+  "author": "SakuraMikku",
+  "description": "基于Node开发的B站直播间鉴权弹幕工具",
+  "version": "v0.0.1a",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^27.0.0",
+    "npm": "^11.14.1",
+    "ws": "^8.14.2"
+  }
+}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>B站直播弹幕助手</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="control-panel">
+        <input type="number" id="roomIdInput" placeholder="输入直播间号" />
+        <button id="connectBtn">连接</button>
+        <button id="disconnectBtn" disabled>断开</button>
+      </div>
+
+      <div class="status-bar">
+        状态: <span id="statusText">未连接</span> | 人气:
+        <span id="onlineCount">-</span>
+      </div>
+
+      <div class="content-area">
+        <div class="log-panel">
+          <h3>系统日志</h3>
+          <div id="logContent"></div>
+        </div>
+
+        <div class="msg-panel">
+          <h3>实时消息</h3>
+          <div id="msgContent"></div>
+        </div>
+      </div>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>
