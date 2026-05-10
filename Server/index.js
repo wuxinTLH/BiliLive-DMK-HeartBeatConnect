@@ -133,8 +133,102 @@ class BilibiliConnector extends EventEmitter {
         return this._roomId;
     }
 
+    async sendDanmaku(message) {
+        if (!this.isConnected()) {
+            throw new Error("未连接到直播间");
+        }
+        const sess = (process.env.BILI_SESSDATA || "").trim();
+        if (!sess) {
+            throw new Error("未配置 SESSDATA，无法发送弹幕");
+        }
+        let csrf = (process.env.BILI_CSRF || "").trim();
+        if (!csrf) {
+            csrf = this._extractCSRF(sess);
+        }
+        if (!csrf || csrf.length < 5) {
+            throw new Error("CSRF token 无效，请在 .env 文件中配置 BILI_CSRF（浏览器 Cookie 中的 bili_jct 值）");
+        }
+        if (!message || !message.trim()) {
+            throw new Error("弹幕内容不能为空");
+        }
+        return this._sendDanmakuAPI(this._roomId, message.trim(), sess, csrf);
+    }
+
+    _extractCSRF(sess) {
+        try {
+            const decoded = decodeURIComponent(sess);
+            const parts = decoded.split(",");
+            if (parts.length >= 3) {
+                const hashPart = parts[2];
+                const starIdx = hashPart.indexOf("*");
+                if (starIdx !== -1) {
+                    return hashPart.substring(starIdx + 1);
+                }
+            }
+        } catch { }
+        return "";
+    }
+
+    _sendDanmakuAPI(roomId, msg, sess, csrf) {
+        return new Promise((res, rej) => {
+            const postData = new URLSearchParams({
+                roomid: roomId,
+                msg: msg,
+                color: "16777215",
+                fontsize: "25",
+                mode: "1",
+                rnd: String(Math.floor(Date.now() / 1000)),
+                csrf_token: csrf,
+                csrf: csrf,
+            }).toString();
+            const u = new URL("https://api.live.bilibili.com/msg/send");
+            const req = https.request(
+                {
+                    hostname: u.hostname,
+                    port: 443,
+                    path: u.pathname,
+                    method: "POST",
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Content-Length": Buffer.byteLength(postData),
+                        Cookie: `SESSDATA=${sess}`,
+                        Referer: `https://live.bilibili.com/${roomId}`,
+                        Origin: "https://live.bilibili.com",
+                    },
+                },
+                (r) => {
+                    let d = "";
+                    r.on("data", (c) => (d += c));
+                    r.on("end", () => {
+                        try {
+                            const j = JSON.parse(d);
+                            if (j.code === 0) {
+                                logger.info(`[BILI] 弹幕发送成功: ${msg}`);
+                                res({ success: true, message: msg });
+                            } else {
+                                rej(new Error(`发送失败: ${j.message || "未知错误"} (code=${j.code})`));
+                            }
+                        } catch {
+                            rej(new Error(`响应解析失败: ${d.slice(0, 100)}`));
+                        }
+                    });
+                },
+            );
+            req.on("error", rej);
+            req.setTimeout(10000, () => {
+                req.destroy();
+                rej(new Error("发送超时"));
+            });
+            req.write(postData);
+            req.end();
+        });
+    }
+
     // ══ 内部 ══
     _doConnect(wssUrl, realRoomId, buvid3, token, retry, uid) {
+        this._uid = uid;
+        this._currentRoomId = realRoomId;
         logger.info(`[BILI] WS 连接中 (retry=${retry})`);
         const ws = new WebSocket(wssUrl, {
             headers: {
@@ -274,6 +368,7 @@ class BilibiliConnector extends EventEmitter {
                     logger.info("[BILI] 鉴权成功 ✓");
                     this._startHB();
                     this.emit("connected");
+                    this.emit("authSuccess", { uid: this._uid, roomId: this._currentRoomId });
                 } else {
                     logger.error(`[BILI] 鉴权失败 code=${code}`);
                     this.emit("error", { message: `鉴权失败 code=${code}` });
@@ -611,3 +706,157 @@ class BilibiliConnector extends EventEmitter {
 }
 
 module.exports = BilibiliConnector;
+
+if (require.main === module) {
+    const http = require('http');
+    const fs = require('fs');
+    const path = require('path');
+
+    // 加载 .env 文件
+    const envPath = path.join(__dirname, '..', '.env');
+    if (fs.existsSync(envPath)) {
+        fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed && !trimmed.startsWith('#')) {
+                const eqIdx = trimmed.indexOf('=');
+                if (eqIdx > 0) {
+                    const key = trimmed.substring(0, eqIdx).trim();
+                    let val = trimmed.substring(eqIdx + 1).trim();
+                    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                        val = val.substring(1, val.length - 1);
+                    }
+                    if (!process.env[key]) {
+                        process.env[key] = val;
+                    }
+                }
+            }
+        });
+    }
+
+    const PORT = parseInt(process.env.SERVER_PORT || '30081', 10);
+    const connectors = new Map();
+
+    const server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+        if (req.method === 'OPTIONS') {
+            res.writeHead(204);
+            res.end();
+            return;
+        }
+
+        const url = new URL(req.url, `http://localhost:${PORT}`);
+
+        if (url.pathname === '/api/connect' && req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', () => {
+                try {
+                    const { roomId } = JSON.parse(body);
+                    if (!roomId) {
+                        res.writeHead(400);
+                        res.end(JSON.stringify({ error: '缺少 roomId 参数' }));
+                        return;
+                    }
+                    if (connectors.has(String(roomId))) {
+                        res.writeHead(200);
+                        res.end(JSON.stringify({ message: '已连接该房间', roomId }));
+                        return;
+                    }
+                    const connector = new BilibiliConnector();
+                    connectors.set(String(roomId), connector);
+
+                    connector.on('danmaku', data => console.log(`[弹幕] ${data.uname}: ${data.message}`));
+                    connector.on('gift', data => console.log(`[礼物] ${data.uname} 送出 ${data.giftName} x${data.num}`));
+                    connector.on('guard', data => console.log(`[舰长] ${data.uname} 购买了 ${data.guardLevel} 级舰长`));
+                    connector.on('superchat', data => console.log(`[SC] ¥${data.price} ${data.uname}: ${data.message}`));
+                    connector.on('error', err => console.error(`[错误] ${err.message}`));
+
+                    connector.connect(roomId).then(() => {
+                        res.writeHead(200);
+                        res.end(JSON.stringify({ message: '连接成功', roomId }));
+                    }).catch(err => {
+                        res.writeHead(500);
+                        res.end(JSON.stringify({ error: err.message }));
+                    });
+                } catch (e) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: '请求格式错误' }));
+                }
+            });
+        } else if (url.pathname === '/api/disconnect' && req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', () => {
+                try {
+                    const { roomId } = JSON.parse(body);
+                    const connector = connectors.get(String(roomId));
+                    if (!connector) {
+                        res.writeHead(404);
+                        res.end(JSON.stringify({ error: '未找到该房间的连接' }));
+                        return;
+                    }
+                    connector.disconnect();
+                    connectors.delete(String(roomId));
+                    res.writeHead(200);
+                    res.end(JSON.stringify({ message: '已断开连接', roomId }));
+                } catch (e) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: '请求格式错误' }));
+                }
+            });
+        } else if (url.pathname === '/api/send' && req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', () => {
+                try {
+                    const { roomId, message } = JSON.parse(body);
+                    const connector = connectors.get(String(roomId));
+                    if (!connector) {
+                        res.writeHead(404);
+                        res.end(JSON.stringify({ error: '未找到该房间的连接' }));
+                        return;
+                    }
+                    connector.sendDanmaku(message).then(result => {
+                        res.writeHead(200);
+                        res.end(JSON.stringify(result));
+                    }).catch(err => {
+                        res.writeHead(500);
+                        res.end(JSON.stringify({ error: err.message }));
+                    });
+                } catch (e) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: '请求格式错误' }));
+                }
+            });
+        } else if (url.pathname === '/api/status' && req.method === 'GET') {
+            const status = {};
+            connectors.forEach((connector, roomId) => {
+                status[roomId] = connector.isConnected();
+            });
+            res.writeHead(200);
+            res.end(JSON.stringify({ connections: status }));
+        } else {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: '未找到该接口' }));
+        }
+    });
+
+    server.listen(PORT, () => {
+        console.log(`[Server] API 服务器已启动，监听端口 ${PORT}`);
+        console.log(`[Server] 可用接口:`);
+        console.log(`  POST /api/connect    - 连接直播间 (body: { "roomId": "1945098" })`);
+        console.log(`  POST /api/disconnect - 断开连接 (body: { "roomId": "1945098" })`);
+        console.log(`  POST /api/send       - 发送弹幕 (body: { "roomId": "1945098", "message": "你好" })`);
+        console.log(`  GET  /api/status     - 查看连接状态`);
+    });
+
+    process.on('SIGINT', () => {
+        console.log('\n正在关闭服务器...');
+        connectors.forEach(connector => connector.disconnect());
+        server.close(() => process.exit(0));
+    });
+}

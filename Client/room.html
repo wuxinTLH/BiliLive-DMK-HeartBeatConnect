@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-pink">
+  <head>
+    <meta charset="UTF-8" />
+    <title>B站直播间</title>
+    <link rel="stylesheet" href="room.css" />
+  </head>
+  <body>
+    <div class="room-container">
+      <header class="room-header">
+        <div class="room-info">
+          <span class="room-title">直播间 <span id="roomIdDisplay">-</span></span>
+          <span class="room-status" id="statusText">未连接</span>
+        </div>
+        <div class="header-actions">
+          <div class="online-badge">
+            <span class="dot"></span>
+            <span id="onlineCount">-</span>
+          </div>
+          <div class="theme-switcher">
+            <button class="theme-btn" data-theme="blue-pink" title="蓝粉白">🎀</button>
+            <button class="theme-btn" data-theme="white" title="白色">☀️</button>
+            <button class="theme-btn" data-theme="dark" title="黑色">🌙</button>
+          </div>
+          <button id="disconnectBtn" class="btn-disconnect">断开</button>
+        </div>
+      </header>
+
+      <div class="content-area">
+        <div class="msg-panel">
+          <div class="panel-header">
+            <h3>实时消息</h3>
+            <div class="filter-btns">
+              <button class="filter-btn active" data-filter="all">全部</button>
+              <button class="filter-btn" data-filter="danmaku">弹幕</button>
+              <button class="filter-btn" data-filter="gift">礼物</button>
+              <button class="filter-btn" data-filter="sc">SC</button>
+            </div>
+          </div>
+          <div id="msgContent"></div>
+        </div>
+
+        <div class="side-panel">
+          <div class="danmaku-sender">
+            <h3>发送弹幕</h3>
+            <div class="sender-box">
+              <input type="text" id="danmakuInput" placeholder="输入弹幕内容..." maxlength="20" />
+              <button id="sendBtn">发送</button>
+            </div>
+            <div id="sendStatus" class="send-status"></div>
+          </div>
+
+          <div class="log-panel">
+            <h3>系统日志</h3>
+            <div id="logContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="room.js"></script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>B站直播弹幕助手 - 主控台</title>
+    <link rel="stylesheet" href="main.css" />
+  </head>
+  <body>
+    <div class="launcher">
+      <div class="logo">
+        <div class="logo-icon">🎮</div>
+        <h1>B站直播弹幕助手</h1>
+      </div>
+      <div class="input-group">
+        <input type="number" id="roomIdInput" placeholder="输入直播间号" />
+        <button id="openBtn">打开直播间</button>
+      </div>
+      <div class="quick-links">
+        <span class="label">快速打开:</span>
+        <div class="quick-btns" id="quickBtns"></div>
+      </div>
+      <div class="footer">
+        <span id="roomCount">已打开 0 个直播间</span>
+      </div>
+    </div>
+    <script src="main.js"></script>
+  </body>
+</html>

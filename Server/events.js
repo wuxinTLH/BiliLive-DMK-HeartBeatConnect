@@ -1,7 +1,8 @@
 module.exports = {
   CONNECT: 'bili:connect',
   DISCONNECT: 'bili:disconnect',
-  STATUS: 'bili:status', // 后端主动推送状态
+  SEND_DANMAKU: 'bili:sendDanmaku',
+  STATUS: 'bili:status',
   DANMAKU: 'bili:danmaku',
   GIFT: 'bili:gift',
   GUARD: 'bili:guard',
@@ -9,5 +10,7 @@ module.exports = {
   ONLINE: 'bili:online',
   LIVE_START: 'bili:liveStart',
   LIVE_END: 'bili:liveEnd',
-  ERROR: 'bili:error'
+  ERROR: 'bili:error',
+  DANMAKU_SENT: 'bili:danmakuSent',
+  AUTH_SUCCESS: 'bili:authSuccess'
 };

@@ -1,0 +1,125 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.launcher {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 40px;
+  width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.logo-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.logo h1 {
+  font-size: 22px;
+  color: #333;
+  font-weight: 600;
+}
+
+.input-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+input {
+  flex: 1;
+  padding: 14px 18px;
+  border: 2px solid #e8e8e8;
+  border-radius: 14px;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.3s;
+}
+
+input:focus {
+  border-color: #23ade5;
+  box-shadow: 0 0 0 3px rgba(35, 173, 229, 0.15);
+}
+
+button {
+  padding: 14px 24px;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #23ade5, #56d4f0);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(35, 173, 229, 0.35);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.quick-links {
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.label {
+  font-size: 13px;
+  color: #666;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.quick-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quick-btn {
+  padding: 8px 14px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #555;
+}
+
+.quick-btn:hover {
+  border-color: #23ade5;
+  color: #23ade5;
+  transform: translateY(-1px);
+}
+
+.footer {
+  text-align: center;
+  font-size: 13px;
+  color: #999;
+}

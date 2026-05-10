@@ -26,3 +26,5 @@ coverage/
 
 /dist_electron/
 package-lock.json
+
+MISSION.md

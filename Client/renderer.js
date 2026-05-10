@@ -1,5 +1,5 @@
 const { ipcRenderer } = require('electron');
-const EVENTS = require('../Server/events'); // 注意：在Electron中渲染进程可以直接引用本地文件，但通常需要配置contextIsolation: false或preload脚本。这里假设配置允许直接require。
+const EVENTS = require('../Server/events');
 
 // DOM 元素
 const roomIdInput = document.getElementById('roomIdInput');
